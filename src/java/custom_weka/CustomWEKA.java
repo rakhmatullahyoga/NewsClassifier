@@ -31,10 +31,20 @@ public class CustomWEKA {
     private static Evaluation eval;
     private static InstanceQuery query;
     
+    /**
+     * Membaca dataset dari file dataset yang sudah ada ada (format .arff)
+     * @param FilePath path lokasi file dataset
+     * @throws Exception 
+     */
     static void ReadDataset(String FilePath) throws Exception {
         dataset = DataSource.read(FilePath);
         dataset.setClassIndex(dataset.numAttributes()-1);
     }
+    /**
+     * Membaca dataset dari database
+     * @param mQuerry query pemilihan database
+     * @throws Exception 
+     */
     static void ReadfromDatabase(String mQuerry) throws Exception {
         Instances nonSTW;
         StringToWordVector strToWV;
@@ -49,6 +59,10 @@ public class CustomWEKA {
         dataset = Filter.useFilter(nonSTW, strToWV);
         dataset.setClassIndex(dataset.numAttributes()-1);
     }
+    /**
+     * Training dengan 10Fold Cross Validation
+     * @throws Exception 
+     */
     static void TenFoldTrain() throws Exception {
         eval = new Evaluation(dataset);
         eval.crossValidateModel(clasifier, dataset, 10, new Random(1));
@@ -57,6 +71,10 @@ public class CustomWEKA {
         System.out.println(eval.fMeasure(1) + " "+eval.precision(1)+" "+eval.recall(1));
         System.out.println(eval.toMatrixString());
     }
+    /**
+     * Full training
+     * @throws Exception 
+     */
     static void FullTraining() throws Exception {
         clasifier.buildClassifier(dataset);
         eval = new Evaluation(dataset);
@@ -66,14 +84,29 @@ public class CustomWEKA {
         System.out.println(eval.fMeasure(1) + " "+eval.precision(1)+" "+eval.recall(1));
         System.out.println(eval.toMatrixString());
     }
+    /**
+     * Membuat dan menyimpan model hasil pembelajaran
+     * @param cls Classifier yang dipilih (J48, kNN, Naive Bayes, Multilayer Perceptron)
+     * @throws Exception 
+     */
     static void CreateAndSaveModel(Classifier cls) throws Exception {
         clasifier = cls;
         clasifier.buildClassifier(dataset);
         SerializationHelper.write(cls.getClass().getSimpleName()+".model", cls);
     }
+    /**
+     * Membaca model yang telah dibuat
+     * @param Filepath
+     * @throws Exception 
+     */
     static void ReadModel(String Filepath) throws Exception {
         clasifier = (Classifier) SerializationHelper.read(Filepath);
     }
+    /**
+     * Mengklasifikasikan dataset yang belum terlabel
+     * @param FilePath
+     * @throws Exception 
+     */
     static void Classify(String FilePath) throws Exception {
         Instances unlabeled = DataSource.read(FilePath);
         unlabeled.setClassIndex(unlabeled.numAttributes()-1);
