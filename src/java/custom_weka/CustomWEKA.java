@@ -26,27 +26,31 @@ import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class CustomWEKA {
-    private static Instances dataset;
-    private static Classifier clasifier;
-    private static Evaluation eval;
-    private static InstanceQuery query;
+    private Instances labeled;
+    private Instances unlabeled;
+    private Classifier clasifier;
     
     /**
      * Membaca dataset dari file dataset yang sudah ada ada (format .arff)
      * @param FilePath path lokasi file dataset
+     * @return 
      * @throws Exception 
      */
-    static void ReadDataset(String FilePath) throws Exception {
-        dataset = DataSource.read(FilePath);
+    public Instances ReadDataset(String FilePath) throws Exception {
+        Instances dataset = DataSource.read(FilePath);
         dataset.setClassIndex(dataset.numAttributes()-1);
+        return dataset;
     }
     /**
      * Membaca dataset dari database
      * @param mQuerry query pemilihan database
+     * @return 
      * @throws Exception 
      */
-    static void ReadfromDatabase(String mQuerry) throws Exception {
+    public Instances ReadfromDatabase(String mQuerry) throws Exception {
+        InstanceQuery query;
         Instances nonSTW;
+        Instances dataset;
         StringToWordVector strToWV;
         query = new InstanceQuery();
         query.setDatabaseURL("jdbc:mysql://localhost:3306/news_aggregator");
@@ -58,12 +62,15 @@ public class CustomWEKA {
         strToWV.setInputFormat(nonSTW);
         dataset = Filter.useFilter(nonSTW, strToWV);
         dataset.setClassIndex(dataset.numAttributes()-1);
+        return dataset;
     }
     /**
      * Training dengan 10Fold Cross Validation
+     * @param dataset
      * @throws Exception 
      */
-    static void TenFoldTrain() throws Exception {
+    public void TenFoldTrain(Instances dataset) throws Exception {
+        Evaluation eval;
         eval = new Evaluation(dataset);
         eval.crossValidateModel(clasifier, dataset, 10, new Random(1));
         System.out.println(eval.toSummaryString("Results\n", false));
@@ -73,9 +80,11 @@ public class CustomWEKA {
     }
     /**
      * Full training
+     * @param dataset
      * @throws Exception 
      */
-    static void FullTraining() throws Exception {
+    public void FullTraining(Instances dataset) throws Exception {
+        Evaluation eval;
         clasifier.buildClassifier(dataset);
         eval = new Evaluation(dataset);
         eval.evaluateModel(clasifier, dataset);
@@ -87,35 +96,49 @@ public class CustomWEKA {
     /**
      * Membuat dan menyimpan model hasil pembelajaran
      * @param cls Classifier yang dipilih (J48, kNN, Naive Bayes, Multilayer Perceptron)
+     * @param dataset
      * @throws Exception 
      */
-    static void CreateAndSaveModel(Classifier cls) throws Exception {
+    public void CreateAndSaveModel(Classifier cls, Instances dataset) throws Exception {
         clasifier = cls;
         clasifier.buildClassifier(dataset);
-        SerializationHelper.write(cls.getClass().getSimpleName()+".model", cls);
+        SerializationHelper.write("model/"+cls.getClass().getSimpleName()+".model", cls);
     }
     /**
      * Membaca model yang telah dibuat
      * @param Filepath
      * @throws Exception 
      */
-    static void ReadModel(String Filepath) throws Exception {
+    public void SetModel(String Filepath) throws Exception {
         clasifier = (Classifier) SerializationHelper.read(Filepath);
     }
     /**
      * Mengklasifikasikan dataset yang belum terlabel
-     * @param FilePath
+     * @return 
      * @throws Exception 
      */
-    static void Classify(String FilePath) throws Exception {
-        Instances unlabeled = DataSource.read(FilePath);
-        unlabeled.setClassIndex(unlabeled.numAttributes()-1);
-        Instances labeled = new Instances(unlabeled);
+    public Instances ClassifyUnlabeled() throws Exception {
+        Instances dataset;
+        dataset = new Instances(unlabeled);
         for(int i=0; i<unlabeled.numInstances(); i++) {
             double clsLabel = clasifier.classifyInstance(unlabeled.instance(i));
-            labeled.instance(i).setClassValue(clsLabel);
+            dataset.instance(i).setClassValue(clsLabel);
         }
-        DataSink.write("newLabeled.arff", labeled);
+        return dataset;
+    }
+    
+    /* Setter dan Getter */
+    public void SetLabeled(Instances _labeled) {
+        labeled = _labeled;
+    }
+    public void SetUnlabeled(Instances _unlabeled) {
+        unlabeled = _unlabeled;
+    }
+    public Instances GetLabeled() {
+        return labeled;
+    }
+    public Instances GetUnlabeled() {
+        return unlabeled;
     }
     
     /**
@@ -123,33 +146,52 @@ public class CustomWEKA {
      * @throws java.lang.Exception
      */
     public static void main(String[] args) throws Exception {
-        // membaca dataset awal
-        String mQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL FROM (artikel NATURAL JOIN artikel_kategori_verified), kategori WHERE artikel.ID_ARTIKEL=artikel_kategori_verified.ID_ARTIKEL AND kategori.ID_KELAS=artikel_kategori_verified.ID_KELAS;";
-        ReadfromDatabase(mQuerry);
+        // Membaca dataset awal
+        CustomWEKA test = new CustomWEKA();
+        String labeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
+                + "FROM (artikel NATURAL JOIN artikel_kategori_verified), kategori "
+                + "WHERE artikel.ID_ARTIKEL=artikel_kategori_verified.ID_ARTIKEL "
+                + "AND kategori.ID_KELAS=artikel_kategori_verified.ID_KELAS;";
+        test.SetLabeled(test.ReadfromDatabase(labeledQuerry));
 
-        // membuat model dan menyimpannya, kemudian ditrain
-        CreateAndSaveModel(new J48());                          // J48
-        TenFoldTrain();
-        FullTraining();
+        // Membuat model dan menyimpannya, kemudian ditrain
+        test.CreateAndSaveModel(new J48(), test.GetLabeled());                          // J48
+        test.TenFoldTrain(test.GetLabeled());
+        test.FullTraining(test.GetLabeled());
         
-        CreateAndSaveModel(new NaiveBayes());                   // Naive Bayes
-        TenFoldTrain();
-        FullTraining();
+        test.CreateAndSaveModel(new NaiveBayes(), test.GetLabeled());                   // Naive Bayes
+        test.TenFoldTrain(test.GetLabeled());
+        test.FullTraining(test.GetLabeled());
         
-        CreateAndSaveModel(new IBk());                          // k-NN
-        TenFoldTrain();
-        FullTraining();
+        test.CreateAndSaveModel(new IBk(), test.GetLabeled());                          // k-NN
+        test.TenFoldTrain(test.GetLabeled());
+        test.FullTraining(test.GetLabeled());
 
         /* BEWARE, MODEL INI LAMA BANGET, SUMPAH! 
-        CreateAndSaveModel(new MultilayerPerceptron());         // Multilayer Perceptron
-        TenFoldTrain();
-        FullTraining(); */
+        test.CreateAndSaveModel(new MultilayerPerceptron(), test.GetLabeled());         // Multilayer Perceptron
+        test.TenFoldTrain(test.GetLabeled());
+        test.FullTraining(test.GetLabeled()); */
         
+        /* Mengambil data yang tidak berlabel */
+        // querynya belom dibikin buat nyari yang gak berlabel
+        /*
+        String unlabeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
+                + "FROM (artikel NATURAL JOIN artikel_kategori_verified), kategori "
+                + "WHERE artikel.ID_ARTIKEL=artikel_kategori_verified.ID_ARTIKEL "
+                + "AND kategori.ID_KELAS=artikel_kategori_verified.ID_KELAS;";
+        test.SetUnlabeled(test.ReadfromDatabase(unlabeledQuerry));
+        */
+        // Membaca model yang telah disimpan pada file eksternal
+        test.SetModel("model/J48.model");
+        test.SetModel("model/NaiveBayes.model");
+        test.SetModel("model/IBk.model");
+        //test.SetModel("model/MultilayerPerceptron.model");
+    
+        /* Mengklasifikasikan data yang tidak berlabel */
+        //test.SetLabeled(test.ClassifyUnlabeled());
         
-        // membaca model yang telah disimpan pada file eksternal
-        /*ReadModel("J48.model");
-        ReadModel("NaiveBayes.model");
-        ReadModel("IBk.model");
-        ReadModel("MultilayerPerceptron.model");*/
+        /* Output hasil klasifikasi */
+        DataSink.write("dataset/NewsLabeled.csv", test.GetLabeled());
+        
     }
 }
