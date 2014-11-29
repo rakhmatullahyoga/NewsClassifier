@@ -16,18 +16,24 @@ import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.lazy.IBk;
+import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.trees.J48;
+import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.SerializationHelper;
+import weka.core.Stopwords;
 import weka.core.converters.ConverterUtils.DataSink;
 import weka.core.converters.ConverterUtils.DataSource;
 import weka.experiment.InstanceQuery;
 import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.NominalToString;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class CustomWEKA {
+    private Instances trainData;
     private Instances labeled;
     private Instances unlabeled;
+    //private Filter filter;
     private Classifier clasifier;
     
     /**
@@ -58,10 +64,16 @@ public class CustomWEKA {
         query.setPassword("");
         query.setQuery(mQuerry);
         nonSTW = query.retrieveInstances();
+        // Harus diubah dulu tipe atributnya
+        NominalToString filter = new NominalToString();
+        filter.setAttributeIndexes("1,2");
+        filter.setInputFormat(nonSTW);
+        dataset = Filter.useFilter(nonSTW, filter);
         strToWV = new StringToWordVector();
-        strToWV.setInputFormat(nonSTW);
-        dataset = Filter.useFilter(nonSTW, strToWV);
-        dataset.setClassIndex(dataset.numAttributes()-1);
+        strToWV.setInputFormat(dataset);
+        dataset = Filter.useFilter(dataset, strToWV);
+        Attribute attr = dataset.attribute("LABEL");
+        dataset.setClass(attr);
         return dataset;
     }
     /**
@@ -73,7 +85,7 @@ public class CustomWEKA {
         Evaluation eval;
         eval = new Evaluation(dataset);
         eval.crossValidateModel(clasifier, dataset, 10, new Random(1));
-        System.out.println(eval.toSummaryString("Results\n", false));
+        System.out.println(eval.toSummaryString("Results - "+clasifier.getClass().toString(), false));
         System.out.println(eval.toClassDetailsString());
         System.out.println(eval.fMeasure(1) + " "+eval.precision(1)+" "+eval.recall(1));
         System.out.println(eval.toMatrixString());
@@ -88,7 +100,7 @@ public class CustomWEKA {
         clasifier.buildClassifier(dataset);
         eval = new Evaluation(dataset);
         eval.evaluateModel(clasifier, dataset);
-        System.out.println(eval.toSummaryString("Results\n", false));
+        System.out.println(eval.toSummaryString("Results - "+clasifier.getClass().toString(), false));
         System.out.println(eval.toClassDetailsString());
         System.out.println(eval.fMeasure(1) + " "+eval.precision(1)+" "+eval.recall(1));
         System.out.println(eval.toMatrixString());
@@ -146,6 +158,9 @@ public class CustomWEKA {
      * @throws java.lang.Exception
      */
     public static void main(String[] args) throws Exception {
+        Stopwords stpword = new Stopwords();
+        
+        
         // Membaca dataset awal
         CustomWEKA test = new CustomWEKA();
         String labeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
@@ -191,7 +206,7 @@ public class CustomWEKA {
         //test.SetLabeled(test.ClassifyUnlabeled());
         
         /* Output hasil klasifikasi */
-        DataSink.write("dataset/NewsLabeled.csv", test.GetLabeled());
+        DataSink.write("dataset/NewsLabeled.arff", test.GetLabeled());
         
     }
 }
