@@ -14,12 +14,11 @@ import java.io.File;
 import java.util.Random;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
-import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.bayes.NaiveBayesMultinomial;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.SerializationHelper;
-import weka.core.Stopwords;
 import weka.core.converters.ConverterUtils.DataSink;
 import weka.core.converters.ConverterUtils.DataSource;
 import weka.core.tokenizers.WordTokenizer;
@@ -75,16 +74,8 @@ public class CustomWEKA {
         filter.setAttributeIndexes("1,2");
         filter.setInputFormat(nominal);
         dataset = Filter.useFilter(nominal, filter);
-        StringToWordVector strToWV = new StringToWordVector();
         WordTokenizer token = new WordTokenizer();
         token.setDelimiters(" \r \t.,;:\'\"()?![]1234567890-/");
-        strToWV.setLowerCaseTokens(true);
-        strToWV.setMinTermFreq(5);
-        strToWV.setStopwords(new File("stopwords/stopwordID.txt"));
-        strToWV.setTokenizer(token);
-        strToWV.setWordsToKeep(1000);
-        strToWV.setInputFormat(dataset);
-        dataset = Filter.useFilter(dataset, strToWV);
         Attribute attr = dataset.attribute("LABEL");
         dataset.setClass(attr);
         return dataset;
@@ -168,7 +159,7 @@ public class CustomWEKA {
             double clsLabel = clasifier.classifyInstance(dataset.instance(i));
             classified.instance(i).setClassValue(clsLabel);
         }
-        return dataset;
+        return classified;
     }
     
     /* Setter dan Getter */
@@ -190,8 +181,6 @@ public class CustomWEKA {
      * @throws java.lang.Exception
      */
     public static void main(String[] args) throws Exception {
-        Stopwords stpword = new Stopwords();
-        
         // Membaca dataset awal
         CustomWEKA test = new CustomWEKA();
         String labeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
@@ -202,12 +191,11 @@ public class CustomWEKA {
         Instances processed_nom = new Instances(test.Preprocess(nom));
 
         // Membuat model dan menyimpannya, kemudian ditrain
-        NaiveBayes nBayes = new NaiveBayes();
-        nBayes.setUseKernelEstimator(true);
+        NaiveBayesMultinomial nBayes = new NaiveBayesMultinomial();
         test.CreateAndSaveModel(nBayes, processed_nom);
         
         // Membaca model yang telah disimpan pada file eksternal
-        test.SetModel("model/FilteredClassifier.model");
+        //test.SetModel("model/NaiveBayes.model");
         
         /* Mengklasifikasikan data yang tidak berlabel */
         test.SetUnlabeled(test.ReadDataset("dataset/unlabeled.arff"));
