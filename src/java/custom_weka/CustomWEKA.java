@@ -30,10 +30,8 @@ import weka.filters.unsupervised.attribute.NominalToString;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class CustomWEKA {
-    private Instances trainData;
     private Instances labeled;
     private Instances unlabeled;
-    //private Filter filter;
     private Classifier clasifier;
     
     /**
@@ -85,7 +83,7 @@ public class CustomWEKA {
         Evaluation eval;
         eval = new Evaluation(dataset);
         eval.crossValidateModel(clasifier, dataset, 10, new Random(1));
-        System.out.println(eval.toSummaryString("Results - "+clasifier.getClass().toString(), false));
+        System.out.println(eval.toSummaryString("Results - "+clasifier.getClass().getSimpleName(), false));
         System.out.println(eval.toClassDetailsString());
         System.out.println(eval.fMeasure(1) + " "+eval.precision(1)+" "+eval.recall(1));
         System.out.println(eval.toMatrixString());
@@ -100,7 +98,7 @@ public class CustomWEKA {
         clasifier.buildClassifier(dataset);
         eval = new Evaluation(dataset);
         eval.evaluateModel(clasifier, dataset);
-        System.out.println(eval.toSummaryString("Results - "+clasifier.getClass().toString(), false));
+        System.out.println(eval.toSummaryString("Results - "+clasifier.getClass().getSimpleName(), false));
         System.out.println(eval.toClassDetailsString());
         System.out.println(eval.fMeasure(1) + " "+eval.precision(1)+" "+eval.recall(1));
         System.out.println(eval.toMatrixString());
@@ -160,7 +158,6 @@ public class CustomWEKA {
     public static void main(String[] args) throws Exception {
         Stopwords stpword = new Stopwords();
         
-        
         // Membaca dataset awal
         CustomWEKA test = new CustomWEKA();
         String labeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
@@ -181,7 +178,7 @@ public class CustomWEKA {
         test.CreateAndSaveModel(new IBk(), test.GetLabeled());                          // k-NN
         test.TenFoldTrain(test.GetLabeled());
         test.FullTraining(test.GetLabeled());
-
+        
         /* BEWARE, MODEL INI LAMA BANGET, SUMPAH! 
         test.CreateAndSaveModel(new MultilayerPerceptron(), test.GetLabeled());         // Multilayer Perceptron
         test.TenFoldTrain(test.GetLabeled());
