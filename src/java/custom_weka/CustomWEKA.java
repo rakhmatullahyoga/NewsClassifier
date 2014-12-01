@@ -155,7 +155,7 @@ public class CustomWEKA {
         dataset = new Instances(unlabeled);
         dataset.setClassIndex(dataset.numAttributes()-1);
         classified = new Instances(dataset);
-        for(int i=0; i<dataset.numInstances(); i++) {
+        for(int i=0; i<classified.numInstances(); i++) {
             double clsLabel = clasifier.classifyInstance(dataset.instance(i));
             classified.instance(i).setClassValue(clsLabel);
         }
