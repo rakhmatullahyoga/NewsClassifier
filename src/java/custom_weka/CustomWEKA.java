@@ -74,8 +74,6 @@ public class CustomWEKA {
         filter.setAttributeIndexes("1,2");
         filter.setInputFormat(nominal);
         dataset = Filter.useFilter(nominal, filter);
-        WordTokenizer token = new WordTokenizer();
-        token.setDelimiters(" \r \t.,;:\'\"()?![]1234567890-/");
         Attribute attr = dataset.attribute("LABEL");
         dataset.setClass(attr);
         return dataset;
@@ -134,7 +132,7 @@ public class CustomWEKA {
         clasifier.buildClassifier(dataset);
         TenFoldTrain(dataset);
         FullTraining(dataset);
-        SerializationHelper.write("model/"+cls.getClass().getSimpleName()+".model", clasifier);
+        SerializationHelper.write("model/"+clasifier.getClass().getSimpleName()+".model", clasifier);
     }
     /**
      * Membaca model yang telah dibuat
@@ -195,7 +193,7 @@ public class CustomWEKA {
         test.CreateAndSaveModel(nBayes, processed_nom);
         
         // Membaca model yang telah disimpan pada file eksternal
-        //test.SetModel("model/NaiveBayes.model");
+        //test.SetModel("model/FilteredClassifier.model");
         
         /* Mengklasifikasikan data yang tidak berlabel */
         test.SetUnlabeled(test.ReadDataset("dataset/unlabeled.arff"));
