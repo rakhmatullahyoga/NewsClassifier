@@ -123,7 +123,7 @@ public class CustomWEKA {
         strToWV.setMinTermFreq(5);
         strToWV.setStopwords(new File("stopwords/stopwordID.txt"));
         strToWV.setTokenizer(token);
-        strToWV.setWordsToKeep(1000);
+        strToWV.setWordsToKeep(1500);
         strToWV.setUseStoplist(true);
         strToWV.setInputFormat(dataset);
         filtercls.setClassifier(cls);
