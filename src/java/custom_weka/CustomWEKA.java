@@ -56,8 +56,8 @@ public class CustomWEKA {
         StringToWordVector strToWV;
         query = new InstanceQuery();
         query.setDatabaseURL("jdbc:mysql://localhost:3306/news_aggregator");
-        query.setUsername("root");
-        query.setPassword("");
+        query.setUsername("luthfi");
+        query.setPassword("underground");
         query.setQuery(mQuerry);
         nominal = query.retrieveInstances();
         return nominal;
@@ -113,15 +113,15 @@ public class CustomWEKA {
      * @param dataset
      * @throws Exception 
      */
-    public void CreateAndSaveModel(Classifier cls, Instances dataset) throws Exception {
+    public void CreateAndSaveModel(Classifier cls, Instances dataset, String BasePath) throws Exception {
         FilteredClassifier filtercls = new FilteredClassifier();
         StringToWordVector strToWV = new StringToWordVector();
         WordTokenizer token = new WordTokenizer();
-        token.setDelimiters(" \r \t.,;:\'\"()?![]1234567890-/");
+        token.setDelimiters("\n \r \t.,;:'\"()?![]1234567890-/");
         strToWV.setAttributeIndices("1,2");
         strToWV.setLowerCaseTokens(true);
         strToWV.setMinTermFreq(5);
-        strToWV.setStopwords(new File("stopwords/stopwordID.txt"));
+        strToWV.setStopwords(new File(BasePath + "stopwords" + File.separator + "stopwordID.txt"));
         strToWV.setTokenizer(token);
         strToWV.setWordsToKeep(1500);
         strToWV.setUseStoplist(true);
@@ -132,7 +132,7 @@ public class CustomWEKA {
         clasifier.buildClassifier(dataset);
         TenFoldTrain(dataset);
         FullTraining(dataset);
-        SerializationHelper.write("model/"+clasifier.getClass().getSimpleName()+".model", clasifier);
+        SerializationHelper.write(BasePath + "model" + File.separator+clasifier.getClass().getSimpleName()+".model", clasifier);
     }
     /**
      * Membaca model yang telah dibuat
@@ -190,7 +190,7 @@ public class CustomWEKA {
 
         // Membuat model dan menyimpannya, kemudian ditrain
         NaiveBayesMultinomial nBayes = new NaiveBayesMultinomial();
-        test.CreateAndSaveModel(nBayes, processed_nom);
+        test.CreateAndSaveModel(nBayes, processed_nom,"");
         
         // Membaca model yang telah disimpan pada file eksternal
         //test.SetModel("model/FilteredClassifier.model");

@@ -1,0 +1,108 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:c="http://xmlns.jcp.org/jsp/jstl/core"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+    <h:head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+
+        <title>News Classifier | Home</title>
+
+        <!-- Bootstrap Core CSS -->
+        <link href="css/bootstrap.css" rel="stylesheet" />
+
+        <!-- Custom CSS -->
+        <link href="css/custom.css" rel="stylesheet" />
+
+        <!-- Custom Fonts -->
+        <link href="font-awesome-4.1.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+
+        <link href='http://fonts.googleapis.com/css?family=Yellowtail' rel='stylesheet' type='text/css' />
+
+        <link href='http://fonts.googleapis.com/css?family=Raleway:400,300' rel='stylesheet' type='text/css' />
+
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css' />
+
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    </h:head>
+    <h:body>
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-offset-1 col-sm-3">
+                    <a href="index.html"><img class="img-responsive" src="assets/img/nc.png" alt=""></img></a>
+                </div>
+                <!-- Comments Form -->
+                    <div class="well col-sm-offset-1 col-sm-6">
+                        <h:form class="form-horizontal" role="form">
+                          <div class="form-group">
+                            <label class="col-sm-offset-4 col-sm-4">Title</label>
+                            <div class="col-sm-12">
+                              <h:inputText class="title form-control" id="title" value="#{Categorizer.title}" />
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <label class="col-sm-offset-4 col-sm-4">Article</label>
+                            <div class="col-sm-12">
+                              <h:inputTextarea class="form-control" value="#{Categorizer.article}" />
+                            </div>
+                            <label class="kategori col-sm-12"><i class="fa fa-star"></i> contoh-kategori</label>
+                          </div>
+                            
+                          <div class="form-group">
+                            <c:choose>
+                                <c:when test="#{Categorizer.category == ''}">
+                                    <div class="col-sm-offset-4 col-sm-12">
+                                      <h:commandButton type="submit" class="submit btn btn-warning" value="Categorize!" action="#{Categorizer.categorize()}" />
+                                    </div>
+                                </c:when>
+                                <c:otherwise>
+                                        <label class="col-sm-12"><i class="fa fa-star"></i> <h:outputText value="#{Categorizer.category}" /></label>
+                                        <div class="col-sm-12" align="center">
+                                            <button type="submit" class="valid btn btn-primary">Valid</button>
+                                            <button type="button" class="invalid btn btn-primary">Invalid</button>
+                                        </div>
+                                        <div class="kategori-field col-sm-12">
+                                            <h:selectOneListbox id="category" value="#{Categorizer.category_id}" class="form-control" size="1" >
+                                                <f:selectItem itemValue="1" itemLabel="Pendidikan" />
+                                                <f:selectItem itemValue="3" itemLabel="Politik" />
+                                                <f:selectItem itemValue="4" itemLabel="Hukum dan Kriminal" />
+                                                <f:selectItem itemValue="5" itemLabel="Sosial Budaya" />
+                                                <f:selectItem itemValue="6" itemLabel="Olahraga" />
+                                                <f:selectItem itemValue="7" itemLabel="Teknologi dan Sains" />
+                                                <f:selectItem itemValue="9" itemLabel="Hiburan" />
+                                                <f:selectItem itemValue="10" itemLabel="Bisnis dan Ekonomi" />
+                                                <f:selectItem itemValue="12" itemLabel="Kesehatan" />
+                                                <f:selectItem itemValue="14" itemLabel="Bencana dan Kecelakaan" />
+                                            </h:selectOneListbox>
+                                        </div>
+                                </c:otherwise>
+                            </c:choose>
+                          </div>
+                            <div class="form-group correction">
+                                <div class="col-sm-offset-4 col-sm-12">
+                                    <h:commandButton type="submit" class="submit btn btn-warning" value="Put correction" action="#{Categorizer.newModel()}" />
+                                </div>
+                              </div>
+                        </h:form>
+                    </div>
+            </div>
+
+        </div>
+        <!-- /.container -->
+
+        <script>
+            $(document).ready(function(){
+                $(".invalid").click(function () {
+                    $(".kategori-field").show();
+                    $(".correction").show();
+                });
+            });
+        </script>
+    </h:body>
+</html>
+
