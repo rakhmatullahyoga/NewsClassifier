@@ -19,12 +19,15 @@ import weka.classifiers.meta.FilteredClassifier;
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.SerializationHelper;
+import weka.core.converters.CSVLoader;
 import weka.core.converters.ConverterUtils.DataSink;
 import weka.core.converters.ConverterUtils.DataSource;
 import weka.core.tokenizers.WordTokenizer;
 import weka.experiment.InstanceQuery;
 import weka.filters.Filter;
+import weka.filters.SimpleFilter;
 import weka.filters.unsupervised.attribute.NominalToString;
+import weka.filters.unsupervised.attribute.Remove;
 import weka.filters.unsupervised.attribute.StringToWordVector;
 
 public class CustomWEKA {
@@ -42,6 +45,27 @@ public class CustomWEKA {
         Instances dataset = DataSource.read(FilePath);
         dataset.setClassIndex(dataset.numAttributes()-1);
         return dataset;
+    }
+    /**
+     * Membaca dataset dari file CSV
+     * @param Path direktori file CSV
+     * @param NomIdx indeks atribut yang bertipe nominal (Label)
+     * @param StrIdx indeks atribut yang bertipe string (judul, full_text)
+     * @return
+     * @throws Exception 
+     */
+    public Instances ReadFromCSV(String Path, String NomIdx, String StrIdx) throws Exception {
+        CSVLoader loader = new CSVLoader();
+        loader.setSource(new File(Path));
+        loader.setNominalAttributes(NomIdx);
+        loader.setStringAttributes(StrIdx);
+        Instances data = loader.getDataSet();
+        
+        Remove remove = new Remove();
+        remove.setAttributeIndices(StrIdx+","+NomIdx);
+        remove.setInvertSelection(true);
+        remove.setInputFormat(data);
+        return SimpleFilter.useFilter(data, remove);
     }
     /**
      * Membaca dataset dari database
@@ -111,6 +135,7 @@ public class CustomWEKA {
      * Membuat dan menyimpan model hasil pembelajaran
      * @param cls Classifier yang dipilih (J48, kNN, Naive Bayes, Multilayer Perceptron)
      * @param dataset
+     * @param BasePath
      * @throws Exception 
      */
     public void CreateAndSaveModel(Classifier cls, Instances dataset, String BasePath) throws Exception {
@@ -181,7 +206,7 @@ public class CustomWEKA {
     public static void main(String[] args) throws Exception {
         // Membaca dataset awal
         CustomWEKA test = new CustomWEKA();
-        String labeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
+        /*String labeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
                 + "FROM (artikel NATURAL JOIN artikel_kategori_verified), kategori "
                 + "WHERE artikel.ID_ARTIKEL=artikel_kategori_verified.ID_ARTIKEL "
                 + "AND kategori.ID_KELAS=artikel_kategori_verified.ID_KELAS;";
@@ -190,17 +215,35 @@ public class CustomWEKA {
 
         // Membuat model dan menyimpannya, kemudian ditrain
         NaiveBayesMultinomial nBayes = new NaiveBayesMultinomial();
-        test.CreateAndSaveModel(nBayes, processed_nom,"");
+        test.CreateAndSaveModel(nBayes, processed_nom,"");*/
         
         // Membaca model yang telah disimpan pada file eksternal
-        //test.SetModel("model/FilteredClassifier.model");
+        test.SetModel("model/FilteredClassifier.model");
         
         /* Mengklasifikasikan data yang tidak berlabel */
-        test.SetUnlabeled(test.ReadDataset("dataset/unlabeled.arff"));
+        //test.SetUnlabeled(test.ReadDataset("dataset/unlabeled.arff"));
+        //DataSink.write("dataset/NewsUnLabeled.csv", test.GetUnlabeled());
+        //Instances csv = test.ReadDataset("dataset/NewsUnLabeled.csv");
+        
+        /*CSVLoader loader = new CSVLoader();
+        loader.setSource(new File("dataset/template_csv.csv"));
+        loader.setNominalAttributes("14");
+        loader.setStringAttributes("3,6");
+        Instances data = loader.getDataSet();
+        
+        Remove remove = new Remove();
+        remove.setAttributeIndices("3,6,14");
+        remove.setInvertSelection(true);
+        remove.setInputFormat(data);*/
+        
+        test.SetUnlabeled(test.ReadFromCSV("dataset/template_csv.csv", "14", "6,3"));
+        //DataSink.write("dataset/daricsv.arff", data);
         test.SetLabeled(test.ClassifyUnlabeled());
         
+        
+        
         /* Output hasil klasifikasi */
-        DataSink.write("dataset/NewsLabeled.arff", test.GetLabeled());
+        DataSink.write("dataset/NewsLabeled_new_csv.csv", test.GetLabeled());
         
     }
 }
