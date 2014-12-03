@@ -9,19 +9,28 @@ import java.io.Serializable;
 import custom_weka.CustomWEKA;
 import custom_weka.MySQL;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Stack;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.RequestScoped;
+import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
+import javax.servlet.http.Part;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayesMultinomial;
@@ -42,13 +51,14 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
  * @author luthfi
  */
 @ManagedBean(name="Categorizer")
-@RequestScoped
+@SessionScoped
 public class Categorizer implements Serializable {
     private String title;
     private String article;
     private String category;
     private int category_id;
     private CustomWEKA test;
+    private Part part;
     
     public Categorizer()
     {
@@ -89,40 +99,98 @@ public class Categorizer implements Serializable {
     public void setCategory_id(int category_id) {
         this.category_id = category_id;
     }
+
+    public Part getPart() {
+        return part;
+    }
+
+    public void setPart(Part part) {
+        this.part = part;
+    }
+    
+    
     
     public String newModel() throws SQLException, Exception
     {
-        MySQL db = new MySQL();
-        String col[] = {"FULL_TEXT", "JUDUL"};
-        String val[] = new String[2];
-        val[0] = article;
-        val[1] = title;
-        int n = db.Insert("artikel", col, val);
-        db.Order("ID_ARTIKEL", "DESC");
-        db.Limit(0, 1);
-        ResultSet Data = db.Select("artikel");
-        int id = 0;
-        if (Data.first()) {
-            id = Data.getInt("ID_ARTIKEL");
-        }
-        String col1[] = {"ID_ARTIKEL", "ID_KELAS"};
-        String val1[] = new String[2];
-        val1[0] = ""+id;
-        val1[1] = ""+category_id;
-        int m = db.Insert("artikel_kategori_verified", col1, val1);
-        String labeledQuerry = "SELECT artikel.JUDUL, artikel.FULL_TEXT, kategori.LABEL "
-                + "FROM (artikel NATURAL JOIN artikel_kategori_verified), kategori "
-                + "WHERE artikel.ID_ARTIKEL=artikel_kategori_verified.ID_ARTIKEL "
-                + "AND kategori.ID_KELAS=artikel_kategori_verified.ID_KELAS;";
-        Instances nom = new Instances(test.ReadfromDatabase(labeledQuerry));
-        Instances processed_nom = new Instances(test.Preprocess(nom));
         FacesContext facesContext = FacesContext.getCurrentInstance();
         String BasePath = facesContext.getExternalContext().getRealPath("");
+        File file = new File(BasePath + File.separator + "dataset/preprocessed.arff");
 
-        // Membuat model dan menyimpannya, kemudian ditrain
+    	/* This logic is to create the file if the
+    	 * file is not already present
+    	 */
+    	if(!file.exists()){
+    	   file.createNewFile();
+    	}
+
+    	//Here true is to append the content to file
+    	FileWriter fw = new FileWriter(file,true);
+    	//BufferedWriter writer give better performance
+    	BufferedWriter bw = new BufferedWriter(fw);
+    	bw.write("'"+title+"','"+article+"','"+category+"'\n");
+    	//Closing BufferedWriter Stream
+    	bw.close();
+        
+        Instances processed_nom = test.ReadDataset(BasePath + File.separator + "dataset/preprocessed.arff");
         NaiveBayesMultinomial nBayes = new NaiveBayesMultinomial();
         test.CreateAndSaveModel(nBayes, processed_nom,BasePath + File.separator);
+        
+        title = "";
+        article = "";
+        category = "";
+        part = null;
         return "added";
+    }
+    
+    public String reset()
+    {
+        title = "";
+        article = "";
+        category = "";
+        part = null;
+        return "reset";
+    }
+    
+    public String uploadFile() throws IOException, Exception {
+
+        // Extract file name from content-disposition header of file part
+        
+        FacesContext facesContext = FacesContext.getCurrentInstance();
+        
+        String basePath = facesContext.getExternalContext().getRealPath("");
+        File outputFilePath = new File(basePath + File.separator + "dataset" + File.separator + "template_csv.csv");
+
+        // Copy uploaded file to destination path
+        InputStream inputStream = null;
+        OutputStream outputStream = null;
+        try {
+            inputStream = part.getInputStream();
+            outputStream = new FileOutputStream(outputFilePath);
+
+            int read = 0;
+            final byte[] bytes = new byte[1024];
+            while ((read = inputStream.read(bytes)) != -1) {
+                outputStream.write(bytes, 0, read);
+            }
+
+            //statusMessage = "File upload successfull !!";
+        } catch (IOException e) {
+            e.printStackTrace();
+            //statusMessage = "File upload failed !!";
+        } finally {
+            if (outputStream != null) {
+                outputStream.close();
+            }
+            if (inputStream != null) {
+                inputStream.close();
+            }
+        }
+        
+        test.SetModel(basePath + File.separator + "model" + File.separator + "FilteredClassifier.model");
+        test.SetUnlabeled(test.ReadFromCSV(basePath + File.separator + "dataset" + File.separator + "template_csv.csv", "14", "6,3"));
+        test.SetLabeled(test.ClassifyUnlabeled());
+        DataSink.write(basePath + File.separator + "dataset" + File.separator + "NewsLabeled_new_csv.csv", test.GetLabeled());
+        return "upload";    // return to same page
     }
     
     public String categorize() throws Exception
@@ -137,6 +205,7 @@ public class Categorizer implements Serializable {
         String BasePath = facesContext.getExternalContext().getRealPath("");
 
         // Membuat model dan menyimpannya, kemudian ditrain
+        //Instances processed_nom = test.ReadDataset(BasePath + File.separator + "dataset/preprocessed.arff");
         //NaiveBayesMultinomial nBayes = new NaiveBayesMultinomial();
         //test.CreateAndSaveModel(nBayes, processed_nom,BasePath + File.separator);
         
@@ -168,7 +237,7 @@ public class Categorizer implements Serializable {
             DataFile.add(readL);
         }
         textReader.close();
-        category = DataFile.lastElement().split("','")[2].replace('\'',' ');
+        category = DataFile.lastElement().split("','")[2].replace("'","");
         return "true";
     }
 }

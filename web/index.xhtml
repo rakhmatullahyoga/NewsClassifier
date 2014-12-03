@@ -34,11 +34,13 @@
         <div class="container">
             <div class="row">
                 <div class="col-sm-offset-1 col-sm-3">
-                    <a href="index.html"><img class="img-responsive" src="assets/img/nc.png" alt=""></img></a>
+                    <h:link outcome="index">
+                        <img class="img-responsive" src="assets/img/nc.png" alt="" />
+                    </h:link>
                 </div>
                 <!-- Comments Form -->
                     <div class="well col-sm-offset-1 col-sm-6">
-                        <h:form class="form-horizontal" role="form">
+                        <h:form class="form-horizontal" role="form"  enctype="multipart/form-data" id="news">
                           <div class="form-group">
                             <label class="col-sm-offset-4 col-sm-4">Title</label>
                             <div class="col-sm-12">
@@ -52,12 +54,18 @@
                             </div>
                             <label class="kategori col-sm-12"><i class="fa fa-star"></i> contoh-kategori</label>
                           </div>
-                            
+                          <div class="form-group">
+                            <label class="url-label col-sm-offset-4 col-sm-4"><img class="or-label" src="assets/img/or.png" alt="" /><br />Upload CSV</label>
+                            <div class="col-sm-12">
+                                <h:inputFile id="file-csv" value="#{Categorizer.part}" class="file-up form-control" onchange="enable_upload()" />
+                            </div>
+                          </div>  
                           <div class="form-group">
                             <c:choose>
                                 <c:when test="#{Categorizer.category == ''}">
                                     <div class="col-sm-offset-4 col-sm-12">
-                                      <h:commandButton type="submit" class="submit btn btn-warning" value="Categorize!" action="#{Categorizer.categorize()}" />
+                                      <h:commandButton type="submit" class="submit btn btn-warning" id="no-file" value="Categorize!" action="#{Categorizer.categorize()}" />
+                                      <h:commandButton type="submit" class="submit btn btn-warning" id="with-file" style="display: none;" value="Upload!" action="#{Categorizer.uploadFile()}" />
                                     </div>
                                 </c:when>
                                 <c:otherwise>
@@ -65,19 +73,21 @@
                                         <div class="col-sm-12" align="center">
                                             <button type="submit" class="valid btn btn-primary">Valid</button>
                                             <button type="button" class="invalid btn btn-primary">Invalid</button>
+                                            <h:commandButton type="submit" class="invalid btn btn-warning" value="Reset" action="#{Categorizer.reset()}" />
                                         </div>
                                         <div class="kategori-field col-sm-12">
-                                            <h:selectOneListbox id="category" value="#{Categorizer.category_id}" class="form-control" size="1" >
-                                                <f:selectItem itemValue="1" itemLabel="Pendidikan" />
-                                                <f:selectItem itemValue="3" itemLabel="Politik" />
-                                                <f:selectItem itemValue="4" itemLabel="Hukum dan Kriminal" />
-                                                <f:selectItem itemValue="5" itemLabel="Sosial Budaya" />
-                                                <f:selectItem itemValue="6" itemLabel="Olahraga" />
-                                                <f:selectItem itemValue="7" itemLabel="Teknologi dan Sains" />
-                                                <f:selectItem itemValue="9" itemLabel="Hiburan" />
-                                                <f:selectItem itemValue="10" itemLabel="Bisnis dan Ekonomi" />
-                                                <f:selectItem itemValue="12" itemLabel="Kesehatan" />
-                                                <f:selectItem itemValue="14" itemLabel="Bencana dan Kecelakaan" />
+                                            <h:selectOneListbox id="category" value="#{Categorizer.category}" class="form-control" size="1" >
+                                                <f:selectItem itemValue="#{null}" itemLabel="-- Select --" />
+                                                <f:selectItem itemValue="Pendidikan" itemLabel="Pendidikan" />
+                                                <f:selectItem itemValue="Politik" itemLabel="Politik" />
+                                                <f:selectItem itemValue="Hukum dan Kriminal" itemLabel="Hukum dan Kriminal" />
+                                                <f:selectItem itemValue="Sosial Budaya" itemLabel="Sosial Budaya" />
+                                                <f:selectItem itemValue="Olahraga" itemLabel="Olahraga" />
+                                                <f:selectItem itemValue="Teknologi dan Sains" itemLabel="Teknologi dan Sains" />
+                                                <f:selectItem itemValue="Hiburan" itemLabel="Hiburan" />
+                                                <f:selectItem itemValue="Bisnis dan Ekonomi" itemLabel="Bisnis dan Ekonomi" />
+                                                <f:selectItem itemValue="Kesehatan" itemLabel="Kesehatan" />
+                                                <f:selectItem itemValue="Bencana dan Kecelakaan" itemLabel="Bencana dan Kecelakaan" />
                                             </h:selectOneListbox>
                                         </div>
                                 </c:otherwise>
@@ -102,6 +112,19 @@
                     $(".correction").show();
                 });
             });
+            function enable_upload()
+            {
+                if (document.getElementById("news:file-csv").value != "")
+                {
+                    document.getElementById("news:no-file").style = "display:none";
+                    document.getElementById("news:with-file").style = "display:block";
+                }
+                else
+                {
+                    document.getElementById("news:no-file").style = "display:block";
+                    document.getElementById("news:with-file").style = "display:none";
+                }
+            }
         </script>
     </h:body>
 </html>
